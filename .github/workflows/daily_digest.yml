@@ -1,0 +1,31 @@
+name: VP Daily Digest Agent
+
+on:
+  schedule:
+    # 6:00 AM Pacific — 13:00 UTC (PDT=UTC-7). GitHub Actions is UTC-only;
+    # will read 5:00 AM during PST (Nov–Mar, UTC-8). No DST-aware cron available.
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send daily digest emails
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+        run: python3 send_digest_emails.py
