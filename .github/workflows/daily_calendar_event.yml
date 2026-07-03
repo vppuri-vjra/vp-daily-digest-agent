@@ -1,0 +1,31 @@
+name: VP Daily Calendar Digest-Consumption Agent
+
+on:
+  schedule:
+    # 5:45 AM Pacific — 12:45 UTC (PDT=UTC-7). GitHub Actions is UTC-only;
+    # will read 4:45 AM during PST (Nov–Mar, UTC-8). No DST-aware cron available.
+    # Runs before the 6:30 AM event time so the event exists ahead of it.
+    - cron: '45 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  create-event:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create today's Digest Consumption event
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          CALENDAR_ID: ${{ secrets.CALENDAR_ID }}
+        run: python3 create_calendar_event.py

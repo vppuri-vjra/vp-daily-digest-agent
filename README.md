@@ -1,8 +1,11 @@
 # VP Daily Digest Agents
 
-Two agents that push the same 5 exec-attention subject themes to different channels
-every day, each with a body organized into 4 buckets: **Decisions needed**,
-**Deadlines**, **Blockers**, **Required actions**.
+Three agents:
+
+1. **Email** — 5 exec-attention emails/day, each with a body organized into 4 buckets:
+   **Decisions needed**, **Deadlines**, **Blockers**, **Required actions**.
+2. **Slack** — the same 5 subject themes, posted daily to a Slack channel.
+3. **Calendar** — 1 daily "Digest Consumption" event, a reminder block to actually read #1 and #2.
 
 Subject lines are worded to match this criteria (e.g. for a Gmail filter/label rule):
 
@@ -58,3 +61,29 @@ plus `workflow_dispatch`. Requires secrets:
 
 - `SLACK_BOT_TOKEN`
 - `SLACK_CHANNEL`
+
+## Agent 3 — Calendar (`create_calendar_event.py`)
+
+Creates exactly 1 event/day, titled **"Digest Consumption"**, at 6:30 AM Pacific for 15
+minutes, on the `vp.puri@gmail.com` Google Calendar — a block to actually read the day's
+email + Slack digests.
+
+### One-time Google Cloud setup
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create (or reuse) a project and a **Service Account** (IAM & Admin > Service Accounts).
+2. Enable the **Google Calendar API** for that project.
+3. Create a JSON key for the service account and download it (Keys > Add Key > JSON).
+4. In [Google Calendar](https://calendar.google.com) as `vp.puri@gmail.com`: Settings > find your calendar under "Settings for my calendars" > **Share with specific people** > add the service account's email (looks like `xxx@xxx.iam.gserviceaccount.com`) with permission **"Make changes to events"**.
+5. Set `GOOGLE_SERVICE_ACCOUNT_JSON` to the *raw JSON content* of the downloaded key (not a file path) and `CALENDAR_ID` to `vp.puri@gmail.com`.
+
+```bash
+cp .env.example .env   # fill in GOOGLE_SERVICE_ACCOUNT_JSON / CALENDAR_ID
+pip install -r requirements.txt
+python3 create_calendar_event.py
+```
+
+GitHub Actions: `.github/workflows/daily_calendar_event.yml` — daily at 5:45 AM Pacific (12:45 UTC,
+ahead of the 6:30 AM event time), plus `workflow_dispatch`. Requires secrets:
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON`
+- `CALENDAR_ID`
