@@ -1,0 +1,30 @@
+name: VP Daily Slack Digest Agent
+
+on:
+  schedule:
+    # 6:15 AM Pacific — 13:15 UTC (PDT=UTC-7). GitHub Actions is UTC-only;
+    # will read 5:15 AM during PST (Nov–Mar, UTC-8). No DST-aware cron available.
+    - cron: '15 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  send-slack-digest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Post daily Slack digest
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+        run: python3 send_slack_digest.py
