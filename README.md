@@ -65,25 +65,34 @@ plus `workflow_dispatch`. Requires secrets:
 ## Agent 3 — Calendar (`create_calendar_event.py`)
 
 Creates exactly 1 event/day, titled **"Digest Consumption"**, at 6:30 AM Pacific for 15
-minutes, on the `vp.puri@gmail.com` Google Calendar — a block to actually read the day's
+minutes, on the calendar owner's Google Calendar — a block to actually read the day's
 email + Slack digests.
+
+Auth is OAuth2 (not a service account key) — it authenticates as the calendar owner
+directly via a refresh token, so `CALENDAR_ID` is just `primary` and no calendar-sharing
+step is needed. (A service-account-key approach was tried first but blocked by this
+Google Cloud org's `iam.disableServiceAccountKeyCreation` policy.)
 
 ### One-time Google Cloud setup
 
-1. In [Google Cloud Console](https://console.cloud.google.com/), create (or reuse) a project and a **Service Account** (IAM & Admin > Service Accounts).
-2. Enable the **Google Calendar API** for that project.
-3. Create a JSON key for the service account and download it (Keys > Add Key > JSON).
-4. In [Google Calendar](https://calendar.google.com) as `vp.puri@gmail.com`: Settings > find your calendar under "Settings for my calendars" > **Share with specific people** > add the service account's email (looks like `xxx@xxx.iam.gserviceaccount.com`) with permission **"Make changes to events"**.
-5. Set `GOOGLE_SERVICE_ACCOUNT_JSON` to the *raw JSON content* of the downloaded key (not a file path) and `CALENDAR_ID` to `vp.puri@gmail.com`.
+1. In [Google Cloud Console](https://console.cloud.google.com/), in your project: **APIs & Services > Library**, search for and enable the **Google Calendar API**.
+2. **APIs & Services > OAuth consent screen** — configure it (External or Internal, Testing mode is fine) if not already done.
+3. **APIs & Services > Credentials > Create Credentials > OAuth client ID** — Application type: **Desktop app**. Note the Client ID and Client Secret.
+4. Put `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET` in `.env`.
+5. Run `python3 get_refresh_token.py` locally — it opens a browser, you sign in as the calendar owner and grant calendar access, and it prints a refresh token.
+6. Put that refresh token in `.env` as `GOOGLE_OAUTH_REFRESH_TOKEN`, and set `CALENDAR_ID=primary`.
 
 ```bash
-cp .env.example .env   # fill in GOOGLE_SERVICE_ACCOUNT_JSON / CALENDAR_ID
+cp .env.example .env   # fill in GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET
 pip install -r requirements.txt
+python3 get_refresh_token.py     # one-time — prints GOOGLE_OAUTH_REFRESH_TOKEN
 python3 create_calendar_event.py
 ```
 
 GitHub Actions: `.github/workflows/daily_calendar_event.yml` — daily at 5:45 AM Pacific (12:45 UTC,
 ahead of the 6:30 AM event time), plus `workflow_dispatch`. Requires secrets:
 
-- `GOOGLE_SERVICE_ACCOUNT_JSON`
-- `CALENDAR_ID`
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `GOOGLE_OAUTH_REFRESH_TOKEN`
+- `CALENDAR_ID` (`primary`)
